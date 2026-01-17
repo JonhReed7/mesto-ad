@@ -71,10 +71,44 @@ const avatarInput = avatarForm.querySelector(".popup__input_type_avatar");
 const removeCardModalWindow = document.querySelector(".popup_type_remove-card");
 const removeCardForm = removeCardModalWindow.querySelector(".popup__form");
 
+const usersStatsModalWindow = document.querySelector(".popup_type_info");
+const usersStatsModalTitle = usersStatsModalWindow.querySelector(".popup__title");
+const usersStatsModalInfoList = usersStatsModalWindow.querySelector(".popup__info");
+const usersStatsModalText = usersStatsModalWindow.querySelector(".popup__text");
+const usersStatsModalUsersList = usersStatsModalWindow.querySelector(".popup__list");
+
+const logoElement = document.querySelector(".header__logo");
+
 let currentUserId = null;
 
 let cardToDelete = null;
 let cardIdToDelete = null;
+
+const formatDate = (date) =>
+  date.toLocaleDateString("ru-RU", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+const createInfoString = (term, description) => {
+  const template = document.getElementById("popup-info-definition-template");
+  const element = template.content.querySelector(".popup__info-item").cloneNode(true);
+  
+  element.querySelector(".popup__info-term").textContent = term;
+  element.querySelector(".popup__info-description").textContent = description;
+  
+  return element;
+};
+
+const createUserPreview = (user) => {
+  const template = document.getElementById("popup-info-user-preview-template");
+  const element = template.content.querySelector(".popup__list-item").cloneNode(true);
+  
+  element.style.backgroundImage = `url(${user.avatar})`;
+  
+  return element;
+};
 
 const renderLoading = (button, isLoading, defaultText = "Сохранить") => {
   if (isLoading) {
@@ -90,6 +124,66 @@ const renderDeleteLoading = (button, isLoading) => {
   } else {
     button.textContent = "Да";
   }
+};
+
+const handleLogoClick = () => {
+  getCardList()
+    .then((cards) => {
+      usersStatsModalInfoList.innerHTML = "";
+      usersStatsModalUsersList.innerHTML = "";
+      
+      usersStatsModalTitle.textContent = "Статистика";
+      
+      usersStatsModalInfoList.append(
+        createInfoString("Всего карточек:", cards.length)
+      );
+      
+      const uniqueUsers = [];
+      const userIds = new Set();
+      
+      cards.forEach((card) => {
+        if (!userIds.has(card.owner._id)) {
+          userIds.add(card.owner._id);
+          uniqueUsers.push(card.owner);
+        }
+      });
+      
+      usersStatsModalInfoList.append(
+        createInfoString("Уникальных авторов:", uniqueUsers.length)
+      );
+      
+      const totalLikes = cards.reduce((sum, card) => sum + card.likes.length, 0);
+      usersStatsModalInfoList.append(
+        createInfoString("Всего лайков:", totalLikes)
+      );
+      
+      if (cards.length > 0) {
+        usersStatsModalInfoList.append(
+          createInfoString(
+            "Первая создана:",
+            formatDate(new Date(cards[cards.length - 1].createdAt))
+          )
+        );
+        
+        usersStatsModalInfoList.append(
+          createInfoString(
+            "Последняя создана:",
+            formatDate(new Date(cards[0].createdAt))
+          )
+        );
+      }
+      
+      usersStatsModalText.textContent = "Авторы карточек:";
+      
+      uniqueUsers.forEach((user) => {
+        usersStatsModalUsersList.append(createUserPreview(user));
+      });
+      
+      openModalWindow(usersStatsModalWindow);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
 const handlePreviewPicture = ({ name, link }) => {
@@ -218,6 +312,7 @@ profileForm.addEventListener("submit", handleProfileFormSubmit);
 cardForm.addEventListener("submit", handleCardFormSubmit);
 avatarForm.addEventListener("submit", handleAvatarFromSubmit);
 removeCardForm.addEventListener("submit", handleRemoveCardFormSubmit);
+logoElement.addEventListener("click", handleLogoClick);
 
 openProfileFormButton.addEventListener("click", () => {
   profileTitleInput.value = profileTitle.textContent;
